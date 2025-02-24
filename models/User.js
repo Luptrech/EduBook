@@ -1,19 +1,19 @@
-// backend/models/User.js
 const mongoose = require('mongoose');
-const bcrypt   = require('bcrypt');
+const bcrypt = require('bcrypt');
 
 const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  phone: { type: String, required: true, default: "0" },
-  bio: { type: String, default: null },
-  profileImage: { type: String, default: null },
-  authorized: { type: Boolean, default: false },
-  folderCode: { type: String, default: null }, // Nueva propiedad para la carpeta del usuario
-  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  notifications: { type: Array, default: [] },
-  messages: { type: Array, default: [] }
-});
+  username: { type: String, required: true, unique: true }, // Nombre de usuario único
+  password: { type: String, required: true }, // Contraseña encriptada
+  emailOrPhone: { type: String, required: true, unique: true }, // Puede ser correo o número de teléfono
+  bio: { type: String, default: "" }, // Descripción del usuario
+  profileImage: { type: String, default: "" }, // Foto de perfil
+  coverImage: { type: String, default: "" }, // Foto de portada
+  authorized: { type: Boolean, default: true }, // Indica si el usuario está activo
+  folderCode: { type: String, default: null }, // Código de carpeta (si se usa)
+  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Lista de amigos
+  notifications: { type: Array, default: [] }, // Notificaciones recibidas
+  messages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Message' }], // Mensajes con otros usuarios
+}, { timestamps: true }); // Agrega fechas de creación y actualización automáticamente
 
 // Encriptar la contraseña antes de guardar
 userSchema.pre('save', async function(next) {
