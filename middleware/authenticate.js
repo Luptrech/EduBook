@@ -1,29 +1,33 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');  // Asegúrate de tener un modelo User
+const User = require('../models/User');
 
 const authenticate = async (req, res, next) => {
   try {
-    // Obtén el token del encabezado de autorización (Authorization Bearer token)
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    // Intenta obtener el token del encabezado Authorization o de las cookies
+    const token = req.header('Authorization')?.replace('Bearer ', '') || req.cookies?.token;
+    
     if (!token) {
-      return res.status(401).json({ message: 'Acceso denegado. No se encontró el token' });
+      return res.status(401).json({ message: 'Acceso denegado. Token no proporcionado.' });
     }
 
-    // Verifica y decodifica el token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);  // Asegúrate de tener esta clave en tu .env
-
-    // Busca al usuario en la base de datos usando el ID decodificado del token
-    const user = await User.findOne({ _id: decoded.id });
-    if (!user) {
-      return res.status(401).json({ message: 'Acceso denegado. Usuario no encontrado' });
+    // Verifica el token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded || !decoded.id) {
+      return res.status(401).json({ message: 'Acceso denegado. Token inválido.' });
     }
 
-    // Si todo está bien, agrega el usuario a la solicitud
-    req.user = user;
-    next();  // Llama al siguiente middleware o controlador
+    // Buscar al usuario en la base de datos (solo verificar existencia, sin cargar todo el usuario)
+    const userExists = await User.exists({ _id: decoded.id });
+    if (!userExists) {
+      return res.status(401).json({ message: 'Acceso denegado. Usuario no encontrado.' });
+    }
+
+    // Almacenar solo el ID del usuario en `req.userId`
+    req.userId = decoded.id;
+    next();
   } catch (error) {
-    console.error(error);
-    res.status(401).json({ message: 'Acceso denegado. Token inválido' });
+    console.error('Error en autenticación:', error);
+    res.status(401).json({ message: 'Acceso denegado. Token inválido o expirado.' });
   }
 };
 
